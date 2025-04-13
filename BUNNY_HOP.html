@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bunny Hop Adventure</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #222;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+       
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            border: 4px solid #444;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+       
+        #game-canvas {
+            background-color: transparent;
+        }
+       
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+       
+        #level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 200;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            width: 300px;
+        }
+       
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 200;
+            border: 2px solid #F44336;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            width: 300px;
+        }
+       
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            transition: opacity 0.5s ease-out;
+        }
+       
+        #loading-title {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #FF5722, #FF9800);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 4px 4px 0 #333;
+            letter-spacing: 2px;
+        }
+       
+        #loading-subtitle {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #ddd;
+            font-style: italic;
+        }
+       
+        #loading-bar-container {
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+       
+        #loading-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #FF5722, #FF9800);
+            transition: width 0.3s ease-out;
+            border-radius: 10px;
+        }
+       
+        button {
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin-top: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 0 #2E7D32;
+            transition: all 0.2s;
+        }
+       
+        button:hover {
+            background: linear-gradient(to bottom, #45a049, #2E7D32);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #2E7D32;
+        }
+       
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #2E7D32;
+        }
+       
+        .platform {
+            opacity: 0.9;
+        }
+       
+        #loading-message {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading-screen">
+            <div id="loading-title">BUNNY_HOP</div>
+            <div id="loading-subtitle">by shanecore_systems™</div>
+            <div id="loading-bar-container">
+                <div id="loading-progress"></div>
+            </div>
+            <div id="loading-message">Loading adventure...</div>
+        </div>
+        <canvas id="game-canvas" width="800" height="500"></canvas>
+        <div id="ui">
+            Level: <span id="level-display">1</span> |
+            Score: <span id="score-display">0</span> |
+            Lives: <span id="lives-display">3</span> |
+            Carrots: <span id="carrots-display">0/5</span>
+        </div>
+        <div id="level-complete">
+            <h2>Level Complete!</h2>
+            <p>Score: <span id="level-score">0</span></p>
+            <p>Carrots Collected: <span id="level-carrots">0/5</span></p>
+            <button id="next-level-btn">Next Level</button>
+        </div>
+        <div id="game-over">
+            <h2>Game Over</h2>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const levelDisplay = document.getElementById('level-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const carrotsDisplay = document.getElementById('carrots-display');
+        const levelCompleteScreen = document.getElementById('level-complete');
+        const gameOverScreen = document.getElementById('game-over');
+        const levelScoreDisplay = document.getElementById('level-score');
+        const levelCarrotsDisplay = document.getElementById('level-carrots');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingProgress = document.getElementById('loading-progress');
+        const loadingMessage = document.getElementById('loading-message');
+
+        // Background image
+        let backgroundImg = new Image();
+        backgroundImg.src = "https://assets.onecompiler.app/43e8e5uj7/43er7nupf/IMG-20250413-WA0020.jpg";
+        let assetsLoaded = 0;
+        let totalAssets = 1; // Just the background for now
+
+        // Loading simulation with better progress tracking
+        function updateLoadingProgress() {
+            const progress = Math.min(100, Math.floor((assetsLoaded / totalAssets) * 100));
+            loadingProgress.style.width = progress + '%';
+           
+            // Update loading message
+            if (progress < 30) {
+                loadingMessage.textContent = "Initializing bunny engine...";
+            } else if (progress < 60) {
+                loadingMessage.textContent = "Loading carrot assets...";
+            } else if (progress < 90) {
+                loadingMessage.textContent = "Preparing platforms...";
+            } else {
+                loadingMessage.textContent = "Almost ready...";
+            }
+           
+            if (progress >= 100) {
+                loadingMessage.textContent = "Ready to hop!";
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        gameLoop();
+                    }, 500);
+                }, 800);
+            }
+        }
+
+        // Simulate more progressive loading for better UX
+        function simulateLoading() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 90) {
+                    clearInterval(interval);
+                    // Wait for actual image to load
+                    if (assetsLoaded >= totalAssets) {
+                        updateLoadingProgress();
+                    }
+                } else {
+                    loadingProgress.style.width = progress + '%';
+                }
+            }, 200);
+        }
+
+        backgroundImg.onload = function() {
+            assetsLoaded++;
+            updateLoadingProgress();
+        };
+
+        // If image fails to load, still start the game
+        backgroundImg.onerror = function() {
+            assetsLoaded++;
+            updateLoadingProgress();
+        };
+
+        // Start loading simulation
+        simulateLoading();
+
+        // Game state
+        let gameRunning = true;
+        let currentLevel = 1;
+        let score = 0;
+        let lives = 3;
+        let carrotsCollected = 0;
+        let carrotsRequired = 5;
+        let player = {};
+        let platforms = [];
+        let carrots = [];
+        let enemies = [];
+        let powerUps = [];
+        let keys = {};
+        let gravity = 0.5;
+        let friction = 0.9;
+        let levelComplete = false;
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+       
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+       
+        nextLevelBtn.addEventListener('click', nextLevel);
+        restartBtn.addEventListener('click', restartGame);
+
+        // Game objects
+        function Player(x, y) {
+            this.x = x;
+            this.y = y;
+            this.width = 40;
+            this.height = 50;
+            this.velX = 0;
+            this.velY = 0;
+            this.jumping = false;
+            this.direction = 1; // 1 for right, -1 for left
+            this.powerUpActive = false;
+            this.powerUpType = null;
+            this.powerUpTimer = 0;
+            this.animationFrame = 0;
+           
+            this.update = function() {
+                // Apply friction
+                this.velX *= friction;
+               
+                // Apply gravity
+                this.velY += gravity;
+               
+                // Handle key presses
+                if (keys['ArrowLeft'] || keys['a']) {
+                    this.velX -= 0.5;
+                    this.direction = -1;
+                }
+                if (keys['ArrowRight'] || keys['d']) {
+                    this.velX += 0.5;
+                    this.direction = 1;
+                }
+                if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && !this.jumping) {
+                    this.velY = -12;
+                    this.jumping = true;
+                }
+               
+                // Limit speed
+                if (this.velX > 8) this.velX = 8;
+                if (this.velX < -8) this.velX = -8;
+               
+                // Update position
+                this.x += this.velX;
+                this.y += this.velY;
+               
+                // Screen boundaries
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+               
+                // Check if player fell off the screen
+                if (this.y > canvas.height) {
+                    loseLife();
+                }
+               
+                // Handle power-ups
+                if (this.powerUpActive) {
+                    this.powerUpTimer--;
+                   
+                    if (this.powerUpTimer <= 0) {
+                        this.powerUpActive = false;
+                        this.powerUpType = null;
+                        friction = 0.9;
+                        gravity = 0.5;
+                    }
+                }
+               
+                // Update animation frame
+                if (Math.abs(this.velX) > 0.5) {
+                    this.animationFrame = (this.animationFrame + 0.1) % 4;
+                } else {
+                    this.animationFrame = 0;
+                }
+            };
+           
+            this.draw = function() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                }
+               
+                // Draw bunny body
+                ctx.fillStyle = this.powerUpActive ? this.getPowerUpColor() : '#F5F5F5';
+                ctx.beginPath();
+               
+                // Body
+                ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+               
+                // Head
+                ctx.ellipse(15, -15, 12, 10, 0, 0, Math.PI * 2);
+               
+                // Ears
+                const earY = this.jumping ? -35 : -30;
+                ctx.ellipse(5, earY, 5, 15, 0.3, 0, Math.PI * 2);
+                ctx.ellipse(25, earY, 5, 15, -0.3, 0, Math.PI * 2);
+               
+                ctx.fill();
+               
+                // Draw inner ears
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.ellipse(5, earY, 3, 10, 0.3, 0, Math.PI * 2);
+                ctx.ellipse(25, earY, 3, 10, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw eyes
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(10, -18, 2, 0, Math.PI * 2);
+                ctx.arc(20, -18, 2, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw nose
+                ctx.fillStyle = 'pink';
+                ctx.beginPath();
+                ctx.arc(15, -13, 3, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw mouth (changes when jumping)
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                if (this.jumping) {
+                    // Surprised mouth when jumping
+                    ctx.arc(15, -10, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'black';
+                    ctx.fill();
+                } else {
+                    // Normal mouth
+                    ctx.moveTo(15, -10);
+                    ctx.lineTo(15, -8);
+                    ctx.moveTo(12, -9);
+                    ctx.lineTo(18, -9);
+                }
+                ctx.stroke();
+               
+                // Draw whiskers
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(18, -13);
+                ctx.lineTo(25, -12);
+                ctx.moveTo(18, -12);
+                ctx.lineTo(25, -11);
+                ctx.moveTo(18, -11);
+                ctx.lineTo(25, -10);
+                ctx.moveTo(12, -13);
+                ctx.lineTo(5, -12);
+                ctx.moveTo(12, -12);
+                ctx.lineTo(5, -11);
+                ctx.moveTo(12, -11);
+                ctx.lineTo(5, -10);
+                ctx.stroke();
+               
+                // Draw feet (animation when moving)
+                ctx.fillStyle = '#F5F5F5';
+                const footOffset = Math.sin(this.animationFrame * Math.PI) * 3;
+                ctx.beginPath();
+                ctx.ellipse(-10, 20 + footOffset, 5, 3, 0, 0, Math.PI * 2);
+                ctx.ellipse(10, 20 - footOffset, 5, 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw tail
+                ctx.beginPath();
+                ctx.ellipse(-15, 5, 5, 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw power-up effect if active
+                if (this.powerUpActive) {
+                    ctx.strokeStyle = 'gold';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.width/2 + 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+               
+                ctx.restore();
+            };
+           
+            this.getPowerUpColor = function() {
+                switch(this.powerUpType) {
+                    case 'speed': return '#ADD8E6'; // Light blue
+                    case 'jump': return '#FFD700'; // Gold
+                    case 'invincible': return '#FFA07A'; // Light salmon
+                    default: return '#F5F5F5'; // White
+                }
+            };
+        }
+       
+        function Platform(x, y, width, height, color = '#4CAF50') {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.color = color;
+           
+            this.draw = function() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+               
+                // Add some details
+                ctx.fillStyle = '#388E3C';
+                for (let i = 0; i < this.width; i += 20) {
+                    ctx.fillRect(this.x + i, this.y, 10, 3);
+                }
+            };
+        }
+       
+        function Carrot(x, y) {
+            this.x = x;
+            this.y = y;
+            this.width = 15;
+            this.height = 20;
+            this.collected = false;
+            this.animationFrame = 0;
+           
+            this.update = function() {
+                this.animationFrame = (this.animationFrame + 0.1) % (2 * Math.PI);
+            };
+           
+            this.draw = function() {
+                if (this.collected) return;
+               
+                const yOffset = Math.sin(this.animationFrame) * 3;
+               
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2 + yOffset);
+               
+                // Draw carrot
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.moveTo(0, -this.height/2);
+                ctx.lineTo(this.width/2, this.height/2);
+                ctx.lineTo(-this.width/2, this.height/2);
+                ctx.closePath();
+                ctx.fill();
+               
+                // Draw carrot top
+                ctx.fillStyle = '#32CD32';
+                ctx.beginPath();
+                ctx.moveTo(0, -this.height/2);
+                ctx.lineTo(5, -this.height/2 - 8);
+                ctx.lineTo(-2, -this.height/2 - 5);
+                ctx.lineTo(0, -this.height/2 - 12);
+                ctx.lineTo(2, -this.height/2 - 5);
+                ctx.lineTo(-5, -this.height/2 - 8);
+                ctx.closePath();
+                ctx.fill();
+               
+                ctx.restore();
+            };
+        }
+       
+        function Enemy(x, y, width, height, speed, patrolDistance) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.speed = speed;
+            this.patrolDistance = patrolDistance;
+            this.startX = x;
+            this.direction = 1;
+            this.color = '#9C27B0';
+            this.animationFrame = 0;
+           
+            this.update = function() {
+                this.x += this.speed * this.direction;
+                this.animationFrame = (this.animationFrame + 0.05) % (2 * Math.PI);
+               
+                // Change direction if reached patrol distance
+                if (Math.abs(this.x - this.startX) >= this.patrolDistance) {
+                    this.direction *= -1;
+                }
+            };
+           
+            this.draw = function() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+               
+                // Draw fox body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+               
+                // Body
+                ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+               
+                // Head
+                ctx.ellipse(this.width/2 - 5, -5, 10, 8, 0, 0, Math.PI * 2);
+               
+                // Ears
+                ctx.moveTo(this.width/2 + 5, -10);
+                ctx.lineTo(this.width/2 + 10, -20);
+                ctx.lineTo(this.width/2 + 15, -10);
+               
+                ctx.moveTo(this.width/2 - 5, -10);
+                ctx.lineTo(this.width/2 - 10, -20);
+                ctx.lineTo(this.width/2 - 15, -10);
+               
+                // Tail
+                ctx.moveTo(-this.width/2, 0);
+                ctx.quadraticCurveTo(-this.width/2 - 20, -10, -this.width/2 - 15, 5);
+               
+                ctx.fill();
+               
+                // Draw face
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.width/2 + 3, -5, 3, 0, Math.PI * 2);
+                ctx.arc(this.width/2 - 3, -5, 3, 0, Math.PI * 2);
+                ctx.fill();
+               
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(this.width/2 + 3, -5, 1.5, 0, Math.PI * 2);
+                ctx.arc(this.width/2 - 3, -5, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw nose
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(this.width/2, -2, 2, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw legs (animated)
+                ctx.fillStyle = this.color;
+                const legOffset = Math.sin(this.animationFrame * 2) * 3;
+                ctx.beginPath();
+                ctx.ellipse(-this.width/2 + 10, this.height/2 - 5 + legOffset, 5, 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(-this.width/2 - 10, this.height/2 - 5 - legOffset, 5, 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.width/2 - 15, this.height/2 - 5 + legOffset, 5, 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.width/2 - 5, this.height/2 - 5 - legOffset, 5, 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+               
+                ctx.restore();
+            };
+        }
+       
+        function PowerUp(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.width = 20;
+            this.height = 20;
+            this.type = type; // 'speed', 'jump', 'invincible'
+            this.collected = false;
+            this.animationFrame = 0;
+           
+            this.update = function() {
+                this.animationFrame = (this.animationFrame + 0.05) % (2 * Math.PI);
+            };
+           
+            this.draw = function() {
+                if (this.collected) return;
+               
+                const yOffset = Math.sin(this.animationFrame) * 5;
+               
+                ctx.fillStyle = this.getColor();
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2, this.y + this.height/2 + yOffset, this.width/2, 0, Math.PI * 2);
+                ctx.fill();
+               
+                // Draw symbol
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.getSymbol(), this.x + this.width/2, this.y + this.height/2 + yOffset);
+            };
+           
+            this.getColor = function() {
+                switch(this.type) {
+                    case 'speed': return '#2196F3';
+                    case 'jump': return '#FF9800';
+                    case 'invincible': return '#F44336';
+                    default: return '#9E9E9E';
+                }
+            };
+           
+            this.getSymbol = function() {
+                switch(this.type) {
+                    case 'speed': return 'S';
+                    case 'jump': return 'J';
+                    case 'invincible': return 'I';
+                    default: return '?';
+                }
+            };
+        }
+
+        // Collision detection
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+       
+        function checkPlatformCollision() {
+            let onPlatform = false;
+           
+            for (let platform of platforms) {
+                // Check if player is above platform and falling
+                if (player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width &&
+                    player.y + player.height >= platform.y &&
+                    player.y + player.height <= platform.y + platform.height / 2 &&
+                    player.velY > 0) {
+                   
+                    player.y = platform.y - player.height;
+                    player.velY = 0;
+                    player.jumping = false;
+                    onPlatform = true;
+                }
+            }
+           
+            return onPlatform;
+        }
+       
+        function checkCarrotCollision() {
+            for (let carrot of carrots) {
+                if (!carrot.collected && checkCollision(player, carrot)) {
+                    carrot.collected = true;
+                    carrotsCollected++;
+                    score += 100;
+                    carrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+                    scoreDisplay.textContent = score;
+                   
+                    // Check if all carrots are collected
+                    if (carrotsCollected >= carrotsRequired) {
+                        const exit = platforms.find(p => p.color === '#FF5722');
+                        if (exit) exit.color = '#4CAF50';
+                    }
+                }
+            }
+        }
+       
+        function checkEnemyCollision() {
+            for (let enemy of enemies) {
+                if (checkCollision(player, enemy)) {
+                    if (player.powerUpActive && player.powerUpType === 'invincible') {
+                        // Defeat enemy if invincible
+                        enemies = enemies.filter(e => e !== enemy);
+                        score += 200;
+                        scoreDisplay.textContent = score;
+                    } else {
+                        // Player gets hurt
+                        player.velY = -10;
+                        player.velX = (player.x < enemy.x + enemy.width/2) ? -8 : 8;
+                        loseLife();
+                    }
+                }
+            }
+        }
+       
+        function checkPowerUpCollision() {
+            for (let powerUp of powerUps) {
+                if (!powerUp.collected && checkCollision(player, powerUp)) {
+                    powerUp.collected = true;
+                    activatePowerUp(powerUp.type);
+                    score += 50;
+                    scoreDisplay.textContent = score;
+                }
+            }
+        }
+       
+        function activatePowerUp(type) {
+            player.powerUpActive = true;
+            player.powerUpType = type;
+            player.powerUpTimer = 300; // 5 seconds at 60fps
+           
+            switch(type) {
+                case 'speed':
+                    friction = 0.95; // Less friction for more speed
+                    break;
+                case 'jump':
+                    gravity = 0.3; // Lower gravity for higher jumps
+                    break;
+                case 'invincible':
+                    break;
+            }
+        }
+       
+        function deactivatePowerUp() {
+            player.powerUpActive = false;
+            player.powerUpType = null;
+            friction = 0.9;
+            gravity = 0.5;
+        }
+       
+        function loseLife() {
+            lives--;
+            livesDisplay.textContent = lives;
+           
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                // Reset player position
+                const startPlatform = platforms.find(p => p.color === '#3F51B5');
+                if (startPlatform) {
+                    player.x = startPlatform.x + startPlatform.width/2 - player.width/2;
+                    player.y = startPlatform.y - player.height - 10;
+                    player.velX = 0;
+                    player.velY = 0;
+                }
+               
+                // Deactivate any power-up
+                deactivatePowerUp();
+            }
+        }
+       
+        function checkExitCollision() {
+            const exit = platforms.find(p => p.color === '#4CAF50' && p.y === 0);
+           
+            if (exit && carrotsCollected >= carrotsRequired && checkCollision(player, exit)) {
+                completeLevel();
+            }
+        }
+       
+        function completeLevel() {
+            levelComplete = true;
+            levelScoreDisplay.textContent = score;
+            levelCarrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+            levelCompleteScreen.style.display = 'block';
+        }
+       
+        function nextLevel() {
+            levelCompleteScreen.style.display = 'none';
+            currentLevel++;
+            levelDisplay.textContent = currentLevel;
+           
+            // Reset level-specific variables
+            carrotsCollected = 0;
+            carrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+            levelComplete = false;
+           
+            // Load next level
+            loadLevel(currentLevel);
+        }
+       
+        function gameOver() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+       
+        function restartGame() {
+            gameOverScreen.style.display = 'none';
+            currentLevel = 1;
+            score = 0;
+            lives = 3;
+           
+            levelDisplay.textContent = currentLevel;
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+           
+            gameRunning = true;
+            loadLevel(currentLevel);
+        }
+       
+        // Level design
+        function loadLevel(level) {
+            // Clear existing objects
+            platforms = [];
+            carrots = [];
+            enemies = [];
+            powerUps = [];
+           
+            // Reset player power-ups
+            deactivatePowerUp();
+           
+            // Common platform colors:
+            // - Regular: #4CAF50
+            // - Start: #3F51B5
+            // - Exit: #FF5722 (when locked), #4CAF50 (when unlocked)
+           
+            if (level === 1) {
+                carrotsRequired = 3;
+                carrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+               
+                // Start platform
+                platforms.push(new Platform(350, 400, 100, 20, '#3F51B5'));
+               
+                // Other platforms
+                platforms.push(new Platform(200, 350, 100, 20));
+                platforms.push(new Platform(500, 350, 100, 20));
+                platforms.push(new Platform(300, 250, 200, 20));
+                platforms.push(new Platform(100, 200, 100, 20));
+                platforms.push(new Platform(600, 200, 100, 20));
+                platforms.push(new Platform(350, 100, 100, 20));
+               
+                // Exit platform (top center, starts locked)
+                platforms.push(new Platform(350, 0, 100, 20, '#FF5722'));
+               
+                // Carrots
+                carrots.push(new Carrot(250, 320));
+                carrots.push(new Carrot(550, 320));
+                carrots.push(new Carrot(400, 220));
+               
+                // Power-up
+                powerUps.push(new PowerUp(150, 150, 'jump'));
+               
+                // Player starting position
+                player = new Player(385, 350);
+            }
+            else if (level === 2) {
+                carrotsRequired = 5;
+                carrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+               
+                // Start platform
+                platforms.push(new Platform(50, 450, 100, 20, '#3F51B5'));
+               
+                // Platforms
+                platforms.push(new Platform(200, 450, 100, 20));
+                platforms.push(new Platform(350, 400, 100, 20));
+                platforms.push(new Platform(500, 350, 100, 20));
+                platforms.push(new Platform(650, 300, 100, 20));
+                platforms.push(new Platform(650, 200, 100, 20));
+                platforms.push(new Platform(500, 150, 100, 20));
+                platforms.push(new Platform(350, 100, 100, 20));
+                platforms.push(new Platform(200, 150, 100, 20));
+                platforms.push(new Platform(50, 200, 100, 20));
+               
+                // Exit platform
+                platforms.push(new Platform(50, 0, 100, 20, '#FF5722'));
+               
+                // Carrots
+                carrots.push(new Carrot(250, 420));
+                carrots.push(new Carrot(400, 370));
+                carrots.push(new Carrot(550, 320));
+                carrots.push(new Carrot(700, 270));
+                carrots.push(new Carrot(700, 170));
+               
+                // Enemies (foxes)
+                enemies.push(new Enemy(350, 370, 40, 30, 2, 100));
+                enemies.push(new Enemy(500, 170, 40, 30, 1.5, 150));
+               
+                // Power-ups
+                powerUps.push(new PowerUp(700, 220, 'speed'));
+                powerUps.push(new PowerUp(100, 150, 'invincible'));
+               
+                // Player starting position
+                player = new Player(85, 400);
+            }
+            else if (level === 3) {
+                carrotsRequired = 7;
+                carrotsDisplay.textContent = `${carrotsCollected}/${carrotsRequired}`;
+               
+                // Start platform
+                platforms.push(new Platform(700, 450, 100, 20, '#3F51B5'));
+               
+                // Complex platform arrangement
+                platforms.push(new Platform(600, 400, 100, 20));
+                platforms.push(new Platform(500, 350, 100, 20));
+                platforms.push(new Platform(400, 300, 100, 20));
+                platforms.push(new Platform(300, 250, 100, 20));
+                platforms.push(new Platform(200, 200, 100, 20));
+                platforms.push(new Platform(100, 150, 100, 20));
+                platforms.push(new Platform(100, 50, 100, 20));
+               
+                // Floating platforms
+                platforms.push(new Platform(300, 150, 100, 20));
+                platforms.push(new Platform(500, 100, 100, 20));
+                platforms.push(new Platform(700, 50, 100, 20));
+               
+                // Exit platform
+                platforms.push(new Platform(700, 0, 100, 20, '#FF5722'));
+               
+                // Carrots
+                carrots.push(new Carrot(650, 370));
+                carrots.push(new Carrot(550, 320));
+                carrots.push(new Carrot(450, 270));
+                carrots.push(new Carrot(350, 220));
+                carrots.push(new Carrot(250, 170));
+                carrots.push(new Carrot(350, 120));
+                carrots.push(new Carrot(550, 70));
+               
+                // Enemies (foxes)
+                enemies.push(new Enemy(600, 370, 40, 30, 2, 50));
+                enemies.push(new Enemy(500, 320, 40, 30, 1.5, 80));
+                enemies.push(new Enemy(300, 120, 40, 30, 2, 100));
+               
+                // Power-ups
+                powerUps.push(new PowerUp(150, 120, 'jump'));
+                powerUps.push(new PowerUp(750, 20, 'invincible'));
+               
+                // Player starting position
+                player = new Player(735, 400);
+            }
+            else {
+                // If no more levels, show victory
+                gameOverScreen.innerHTML = `
+                    <h2>Congratulations!</h2>
+                    <p>You've completed all levels!</p>
+                    <p>Final Score: <span id="final-score">${score}</span></p>
+                    <button id="restart-btn">Play Again</button>
+                `;
+                document.getElementById('restart-btn').addEventListener('click', restartGame);
+                gameOverScreen.style.display = 'block';
+                gameRunning = false;
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+           
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+           
+            // Draw background - use image if loaded, otherwise fallback to blue
+            if (backgroundImg.complete && backgroundImg.naturalHeight !== 0) {
+                // Draw the image, scaled to fit the canvas
+                ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+            } else {
+                // Fallback if image hasn't loaded yet
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+           
+            // Draw clouds
+            drawClouds();
+           
+            // Update and draw game objects
+            platforms.forEach(platform => platform.draw());
+           
+            carrots.forEach(carrot => {
+                carrot.update();
+                carrot.draw();
+            });
+           
+            enemies.forEach(enemy => {
+                enemy.update();
+                enemy.draw();
+            });
+           
+            powerUps.forEach(powerUp => {
+                powerUp.update();
+                powerUp.draw();
+            });
+           
+            player.update();
+            player.draw();
+           
+            // Check collisions
+            checkPlatformCollision();
+            checkCarrotCollision();
+            checkEnemyCollision();
+            checkPowerUpCollision();
+            checkExitCollision();
+           
+            // Continue game loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+           
+            // Draw some simple clouds
+            for (let i = 0; i < 5; i++) {
+                const x = (Date.now() / 2000 + i * 100) % (canvas.width + 200) - 100;
+                const y = 50 + i * 80;
+               
+                ctx.beginPath();
+                ctx.arc(x, y, 30, 0, Math.PI * 2);
+                ctx.arc(x + 25, y - 10, 25, 0, Math.PI * 2);
+                ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
+                ctx.arc(x + 25, y + 10, 25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Start the game
+        loadLevel(1);
+        // gameLoop() is now called after loading completes
+    </script>
+</body>
+</html>
